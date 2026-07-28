@@ -54,6 +54,49 @@ Stats is an application that allows you to monitor your macOS system.
  - Sensors information (Temperature/Voltage/Power)
  - Bluetooth devices
  - Multiple time zone clock
+ - **AI Usage** — ChatGPT/Codex, DeepSeek, and Kimi Coding Plan quota monitoring (see below)
+
+## AI Usage Module
+> Added in this fork. This module is not present in the upstream [exelban/stats](https://github.com/exelban/stats).
+
+The AI Usage module reads your local CLI credentials and displays real-time AI service quotas directly in the Stats menu bar and popup.
+
+### Supported Providers
+
+| Provider | Data Source | Configuration |
+|----------|------------|---------------|
+| ChatGPT / Codex | `~/.codex/auth.json` → `chatgpt.com/backend-api/wham/usage` | Enabled by default; requires `codex login` |
+| DeepSeek | API key → `api.deepseek.com/user/balance` | Enter API key in settings |
+| Kimi Coding Plan | `~/.kimi-code/credentials/kimi-code.json` → `api.kimi.com/coding/v1/user/usage` | Auto-detected; requires `kimi login` |
+
+### Design
+
+- Follows the same `Module` / `Popup` / `Settings` / `Reader` / `Widget` architecture as all Stats modules
+- Each provider implements the `AIUsageProvider` protocol — adding a new provider requires only implementing the protocol and registering it
+- Menu bar shows the remaining quota percentage of the primary provider (Mini / BarChart / Tachometer / Text widgets)
+- Popup shows all enabled providers with plan type, quota windows, balance, and reset countdowns
+- Settings allow enabling/disabling individual providers, configuring API keys, and adjusting the refresh interval (1 min – 1 hour)
+
+### Example Popup
+```
+ChatGPT Pro
+  Weekly quota: 42% · 3d 12h
+  Session quota: 68% · 1h 22m
+
+DeepSeek
+  Balance: 110.00 CNY
+
+Kimi Coding Plan
+  Coding Plan · 85%
+```
+
+### Privacy
+All credentials are read locally. API tokens are only sent to the respective official provider endpoints:
+- `chatgpt.com`
+- `api.deepseek.com`
+- `api.kimi.com`
+
+No browser cookies are accessed, and no data is sent to third-party services.
 
 ## FAQs
 
@@ -99,6 +142,9 @@ Stats does not collect any telemetry or analytics. The only external requests it
 
 - https://api.mac-stats.com – For update checks and retrieving the public IP address
 - https://api.github.com – Fallback for update checks
+- https://chatgpt.com – AI Usage module (Codex/ChatGPT quota)
+- https://api.deepseek.com – AI Usage module (DeepSeek balance)
+- https://api.kimi.com – AI Usage module (Kimi Coding Plan usage)
 
 Both of these APIs are used to check for updates. Additionally, an external request is required to obtain the public IP address. I do not want to use any third-party providers for retrieving the public IP address, so I use my own server for this purpose.
 
