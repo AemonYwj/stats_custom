@@ -8,17 +8,18 @@ import Kit
 
 internal class Settings: NSStackView, Settings_v {
     private var updateIntervalValue: Int = 300
-    private var provider: String = "codex"
 
     private let title: String
 
     public var callback: (() -> Void) = {}
     public var setInterval: ((_ value: Int) -> Void) = {_ in }
 
+    private let providers = AIUsageProviders.all
+    private var apiKeyFields: [String: NSSecureTextField] = [:]
+
     public init(_ module: ModuleType) {
         self.title = module.stringValue
         self.updateIntervalValue = Store.shared.int(key: "\(self.title)_updateInterval", defaultValue: self.updateIntervalValue)
-        self.provider = Store.shared.string(key: "\(self.title)_provider", defaultValue: self.provider)
 
         super.init(frame: NSRect(x: 0, y: 0, width: 0, height: 0))
 
@@ -34,13 +35,9 @@ internal class Settings: NSStackView, Settings_v {
 
     public func load(widgets: [widget_t]) {
         self.subviews.forEach{ $0.removeFromSuperview() }
+        self.apiKeyFields.removeAll()
 
         self.addArrangedSubview(PreferencesSection([
-            PreferencesRow(localizedString("Provider"), component: selectView(
-                action: #selector(self.changeProvider),
-                items: AIUsageProviders.all.map { KeyValue_t(key: $0.id, value: $0.displayName) },
-                selected: self.provider
-            )),
             PreferencesRow(localizedString("Update interval"), component: selectView(
                 action: #selector(self.changeUpdateInterval),
                 items: AIUsageUpdateIntervals,
@@ -48,25 +45,61 @@ internal class Settings: NSStackView, Settings_v {
             ))
         ]))
 
+        for provider in self.providers {
+            var rows: [NSView] = []
+
+            let toggle = switchView(
+                action: #selector(self.toggleProvider(_:)),
+                state: AIUsageProviders.isEnabled(provider.id)
+            )
+            toggle.identifier = NSUserInterfaceItemIdentifier(provider.id)
+
+            rows.append(PreferencesRow(
+                provider.displayName,
+                component: toggle
+            ))
+
+            if provider.requiresAPIKey {
+                let field = NSSecureTextField()
+                field.placeholderString = localizedString("API Key")
+                field.stringValue = AIUsageProviders.apiKey(for: provider.id) ?? ""
+                field.widthAnchor.constraint(equalToConstant: 180).isActive = true
+                field.font = NSFont.systemFont(ofSize: 11)
+                field.target = self
+                field.action = #selector(self.apiKeyChanged(_:))
+                field.identifier = NSUserInterfaceItemIdentifier(provider.id)
+                self.apiKeyFields[provider.id] = field
+                rows.append(PreferencesRow(component: field))
+            }
+
+            self.addArrangedSubview(PreferencesSection(rows))
+        }
+
         self.addArrangedSubview(PreferencesSection([
             PreferencesRow(
                 localizedString("Privacy"),
-                localizedString("AIUsage reads the local Codex CLI credentials and only sends requests to the official chatgpt.com quota endpoint."),
+                localizedString("AIUsage reads local CLI credentials and only sends requests to the official provider endpoints."),
                 component: NSView()
             )
         ]))
     }
 
-    @objc private func changeProvider(_ sender: NSMenuItem) {
-        guard let key = sender.representedObject as? String else { return }
-        self.provider = key
-        Store.shared.set(key: "\(self.title)_provider", value: key)
-        self.callback()
-    }
-    @objc private func changeUpdateInterval(_ sender: NSMenuItem) {
-        guard let key = sender.representedObject as? String, let value = Int(key) else { return }
+    @objc private func changeUpdateInterval(_ sender: NSPopUpButton) {
+        guard let key = sender.selectedItem?.representedObject as? String, let value = Int(key) else { return }
         self.updateIntervalValue = value
         Store.shared.set(key: "\(self.title)_updateInterval", value: value)
         self.setInterval(value)
+    }
+
+    @objc private func toggleProvider(_ sender: NSControl) {
+        guard let id = sender.identifier?.rawValue,
+              let provider = self.providers.first(where: { $0.id == id }) else { return }
+        AIUsageProviders.setEnabled(controlState(sender), for: provider.id)
+        self.callback()
+    }
+
+    @objc private func apiKeyChanged(_ sender: NSSecureTextField) {
+        guard let id = sender.identifier?.rawValue else { return }
+        AIUsageProviders.setAPIKey(sender.stringValue, for: id)
     }
 }

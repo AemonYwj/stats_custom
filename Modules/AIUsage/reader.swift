@@ -14,22 +14,36 @@ internal class UsageReader: Reader<AIUsageSnapshot> {
     }
 
     public override func read() {
+        let providers = AIUsageProviders.enabledProviders()
+        guard !providers.isEmpty else {
+            self.callback(AIUsageSnapshot(providers: [], updatedAt: Date()))
+            return
+        }
+
         self.task?.cancel()
         self.task = Task { [weak self] in
             guard let self else { return }
-            let provider = AIUsageProviders.active
-            do {
-                let snapshot = try await provider.fetch()
+
+            var results: [ProviderSnapshot] = []
+            for provider in providers {
                 guard !Task.isCancelled else { return }
-                self.callback(snapshot)
-            } catch {
-                guard !Task.isCancelled else { return }
-                debug("AI Usage fetch failed: \(error.localizedDescription)", log: self.log)
-                self.callback(AIUsageSnapshot(
-                    provider: provider.displayName,
-                    error: error.localizedDescription
-                ))
+                do {
+                    let apiKey = AIUsageProviders.apiKey(for: provider.id)
+                    let snapshot = try await provider.fetch(apiKey: apiKey)
+                    results.append(snapshot)
+                } catch {
+                    guard !Task.isCancelled else { return }
+                    debug("AI Usage [\(provider.id)]: \(error.localizedDescription)", log: self.log)
+                    results.append(ProviderSnapshot(
+                        providerId: provider.id,
+                        providerName: provider.displayName,
+                        error: error.localizedDescription
+                    ))
+                }
             }
+
+            guard !Task.isCancelled else { return }
+            self.callback(AIUsageSnapshot(providers: results, updatedAt: Date()))
         }
     }
 

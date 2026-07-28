@@ -7,25 +7,14 @@ import Cocoa
 import Kit
 
 internal class Popup: PopupWrapper {
-    private let detailsHeight: CGFloat = (22*4) + (Constants.Popup.margins*2)
-
     private let cache = PopupCache<AIUsageSnapshot>()
-
-    private var planField: NSTextField = TextView()
-    private var weeklyField: NSTextField = TextView()
-    private var shortField: NSTextField = TextView()
-    private var updatedField: NSTextField = TextView()
+    private var providerViews: [String: ProviderSection] = [:]
 
     public init(_ module: ModuleType) {
         super.init(module, frame: NSRect(x: 0, y: 0, width: Constants.Popup.width, height: 0))
-
         self.orientation = .vertical
         self.distribution = .fill
         self.spacing = 0
-
-        self.addArrangedSubview(self.initDetails())
-
-        self.recalculateHeight()
     }
 
     required init?(coder: NSCoder) {
@@ -44,9 +33,58 @@ internal class Popup: PopupWrapper {
         }
     }
 
-    private func initDetails() -> NSView {
-        let view: NSView = NSView(frame: NSRect(x: 0, y: 0, width: self.frame.width, height: self.detailsHeight))
-        view.heightAnchor.constraint(equalToConstant: self.detailsHeight).isActive = true
+    internal func callback(_ snapshot: AIUsageSnapshot) {
+        self.cache.apply(snapshot, visible: self.window?.isVisible ?? false, render: self.render)
+    }
+
+    private func render(_ snapshot: AIUsageSnapshot) {
+        let existingIDs = Set(self.providerViews.keys)
+        let newIDs = Set(snapshot.providers.map { $0.providerId })
+
+        for id in existingIDs.subtracting(newIDs) {
+            self.providerViews.removeValue(forKey: id)?.view.removeFromSuperview()
+        }
+
+        for (i, provider) in snapshot.providers.enumerated() {
+            let section: ProviderSection
+            if let existing = self.providerViews[provider.providerId] {
+                section = existing
+                if section.view.superview == nil {
+                    if i > 0, let prev = self.providerViews[snapshot.providers[i-1].providerId] {
+                        self.insertArrangedSubview(section.view, at: self.arrangedSubviews.firstIndex(of: prev.view)! + 1)
+                    } else {
+                        self.insertArrangedSubview(section.view, at: 0)
+                    }
+                }
+                section.update(provider)
+            } else {
+                section = ProviderSection(width: self.frame.width, provider: provider)
+                self.providerViews[provider.providerId] = section
+                self.addArrangedSubview(section.view)
+            }
+        }
+
+        self.recalculateHeight()
+    }
+}
+
+private class ProviderSection {
+    let view: NSView
+
+    private let planField: NSTextField = TextView()
+    private let weeklyField: NSTextField = TextView()
+    private let shortField: NSTextField = TextView()
+    private let balanceField: NSTextField = TextView()
+    private let errorField: NSTextField = TextView()
+    private let timestampField: NSTextField = TextView()
+
+    private let sectionHeight: CGFloat = (22 * 4) + (Constants.Popup.margins * 2)
+
+    init(width: CGFloat, provider: ProviderSnapshot) {
+        self.view = NSView(frame: NSRect(x: 0, y: 0, width: width, height: self.sectionHeight))
+        self.view.heightAnchor.constraint(equalToConstant: self.sectionHeight).isActive = true
+        self.view.wantsLayer = true
+        self.view.layer?.cornerRadius = Constants.Popup.radius
 
         let stack = NSStackView()
         stack.orientation = .vertical
@@ -58,57 +96,70 @@ internal class Popup: PopupWrapper {
         self.planField.font = NSFont.systemFont(ofSize: 13, weight: .semibold)
         self.weeklyField.font = NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .regular)
         self.shortField.font = NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .regular)
-        self.updatedField.font = NSFont.systemFont(ofSize: 11, weight: .regular)
-        self.updatedField.textColor = .secondaryLabelColor
+        self.balanceField.font = NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .regular)
+        self.errorField.font = NSFont.systemFont(ofSize: 11, weight: .regular)
+        self.errorField.textColor = .systemRed
+        self.timestampField.font = NSFont.systemFont(ofSize: 11, weight: .regular)
+        self.timestampField.textColor = .secondaryLabelColor
+        self.timestampField.alignment = .right
 
         stack.addArrangedSubview(self.planField)
         stack.addArrangedSubview(self.weeklyField)
         stack.addArrangedSubview(self.shortField)
-        stack.addArrangedSubview(self.updatedField)
+        stack.addArrangedSubview(self.balanceField)
 
-        view.addSubview(stack)
+        let footerStack = NSStackView()
+        footerStack.orientation = .horizontal
+        footerStack.spacing = 0
+        footerStack.addArrangedSubview(self.errorField)
+        footerStack.addArrangedSubview(NSView())
+        footerStack.addArrangedSubview(self.timestampField)
+        stack.addArrangedSubview(footerStack)
+
+        self.view.addSubview(stack)
         NSLayoutConstraint.activate([
-            stack.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: Constants.Popup.margins),
-            stack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -Constants.Popup.margins),
-            stack.topAnchor.constraint(equalTo: view.topAnchor, constant: Constants.Popup.margins),
-            stack.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -Constants.Popup.margins)
+            stack.leadingAnchor.constraint(equalTo: self.view.leadingAnchor, constant: Constants.Popup.margins),
+            stack.trailingAnchor.constraint(equalTo: self.view.trailingAnchor, constant: -Constants.Popup.margins),
+            stack.topAnchor.constraint(equalTo: self.view.topAnchor, constant: Constants.Popup.margins),
+            stack.bottomAnchor.constraint(equalTo: self.view.bottomAnchor, constant: -Constants.Popup.margins)
         ])
 
-        return view
+        self.update(provider)
     }
 
-    internal func callback(_ snapshot: AIUsageSnapshot) {
-        self.cache.apply(snapshot, visible: self.window?.isVisible ?? false, render: self.render)
-    }
+    func update(_ provider: ProviderSnapshot) {
+        self.planField.stringValue = provider.plan.map { "\(provider.providerName) \($0)" } ?? provider.providerName
 
-    private func render(_ snapshot: AIUsageSnapshot) {
-        self.planField.stringValue = snapshot.plan.map { "\(snapshot.provider) \($0)" } ?? snapshot.provider
+        self.weeklyField.stringValue = format(localizedString("Weekly quota"), window: provider.weeklyWindow)
+        self.weeklyField.isHidden = provider.weeklyWindow == nil
 
-        if let error = snapshot.error {
-            self.weeklyField.stringValue = localizedString("Weekly quota") + ": --"
-            self.shortField.stringValue = localizedString("Session quota") + ": --"
-            self.updatedField.textColor = .systemRed
-            self.updatedField.stringValue = error
-            return
+        self.shortField.stringValue = format(localizedString("Session quota"), window: provider.shortWindow)
+        self.shortField.isHidden = provider.shortWindow == nil
+
+        if let balance = provider.balance {
+            self.balanceField.stringValue = "\(localizedString("Balance")): \(balance)"
+            self.balanceField.isHidden = false
+        } else {
+            self.balanceField.isHidden = true
         }
 
-        self.weeklyField.stringValue = self.format(localizedString("Weekly quota"), window: snapshot.weeklyWindow)
-        self.shortField.stringValue = self.format(localizedString("Session quota"), window: snapshot.shortWindow)
+        if let error = provider.error {
+            self.errorField.stringValue = error
+            self.errorField.isHidden = false
+        } else {
+            self.errorField.isHidden = true
+        }
 
         let formatter = DateFormatter()
         formatter.dateStyle = .none
         formatter.timeStyle = .medium
-        self.updatedField.textColor = .secondaryLabelColor
-        self.updatedField.stringValue = localizedString("Updated at", formatter.string(from: snapshot.updatedAt))
+        self.timestampField.stringValue = formatter.string(from: provider.updatedAt)
     }
 
     private func format(_ title: String, window: AIRateWindow?) -> String {
-        guard let window else { return "\(title): --" }
-
+        guard let window else { return "" }
         let remaining = Int(window.remainingPercent.rounded())
-        guard let reset = window.resetsAt else {
-            return "\(title): \(remaining)%"
-        }
+        guard let reset = window.resetsAt else { return "\(title): \(remaining)%" }
 
         let interval = max(0, Int(reset.timeIntervalSinceNow))
         let days = interval / 86_400
@@ -117,13 +168,13 @@ internal class Popup: PopupWrapper {
 
         let countdown: String
         if days > 0 {
-            countdown = localizedString("resets in", "\(days)\(localizedString("d")) \(hours)\(localizedString("h"))")
+            countdown = "\(days)\(localizedString("d")) \(hours)\(localizedString("h"))"
         } else if hours > 0 {
-            countdown = localizedString("resets in", "\(hours)\(localizedString("h")) \(minutes)\(localizedString("m"))")
+            countdown = "\(hours)\(localizedString("h")) \(minutes)\(localizedString("m"))"
         } else {
-            countdown = localizedString("resets in", "\(minutes)\(localizedString("m"))")
+            countdown = "\(minutes)\(localizedString("m"))"
         }
 
-        return "\(title): \(remaining)% · \(countdown)"
+        return "\(title): \(remaining)% · \(localizedString("resets in", countdown))"
     }
 }

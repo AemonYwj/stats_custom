@@ -102,6 +102,8 @@
 		5EA1A1000000000000000011 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EA1A1000000000000000019 /* main.swift */; };
 		5EA1A1000000000000000012 /* providers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EA1A100000000000000001A /* providers.swift */; };
 		5EA1A1000000000000000013 /* CodexUsageClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EA1A100000000000000001B /* CodexUsageClient.swift */; };
+		5EA1A1000000000000000022 /* DeepSeekProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EA1A1000000000000000020 /* DeepSeekProvider.swift */; };
+		5EA1A1000000000000000023 /* KimiProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EA1A1000000000000000021 /* KimiProvider.swift */; };
 		5EA1A1000000000000000014 /* reader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EA1A100000000000000001C /* reader.swift */; };
 		5EA1A1000000000000000015 /* popup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EA1A100000000000000001D /* popup.swift */; };
 		5EA1A1000000000000000016 /* settings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EA1A100000000000000001E /* settings.swift */; };
@@ -658,6 +660,8 @@
 		5EA1A1000000000000000019 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		5EA1A100000000000000001A /* providers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = providers.swift; sourceTree = "<group>"; };
 		5EA1A100000000000000001B /* CodexUsageClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodexUsageClient.swift; sourceTree = "<group>"; };
+		5EA1A1000000000000000020 /* DeepSeekProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepSeekProvider.swift; sourceTree = "<group>"; };
+		5EA1A1000000000000000021 /* KimiProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KimiProvider.swift; sourceTree = "<group>"; };
 		5EA1A100000000000000001C /* reader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = reader.swift; sourceTree = "<group>"; };
 		5EA1A100000000000000001D /* popup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = popup.swift; sourceTree = "<group>"; };
 		5EA1A100000000000000001E /* settings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = settings.swift; sourceTree = "<group>"; };
@@ -1070,6 +1074,8 @@
 				5EA1A1000000000000000019 /* main.swift */,
 				5EA1A100000000000000001A /* providers.swift */,
 				5EA1A100000000000000001B /* CodexUsageClient.swift */,
+				5EA1A1000000000000000020 /* DeepSeekProvider.swift */,
+				5EA1A1000000000000000021 /* KimiProvider.swift */,
 				5EA1A100000000000000001C /* reader.swift */,
 				5EA1A100000000000000001D /* popup.swift */,
 				5EA1A100000000000000001E /* settings.swift */,
@@ -2300,6 +2306,8 @@
 				5EA1A1000000000000000011 /* main.swift in Sources */,
 				5EA1A1000000000000000012 /* providers.swift in Sources */,
 				5EA1A1000000000000000013 /* CodexUsageClient.swift in Sources */,
+				5EA1A1000000000000000022 /* DeepSeekProvider.swift in Sources */,
+				5EA1A1000000000000000023 /* KimiProvider.swift in Sources */,
 				5EA1A1000000000000000014 /* reader.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

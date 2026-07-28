@@ -2,14 +2,11 @@
 //  CodexUsageClient.swift
 //  AIUsage
 //
-//  Reads the local Codex CLI credentials and queries the ChatGPT quota endpoint.
-//  Token is only sent to chatgpt.com. No browser cookies are accessed.
-//
 
 import Foundation
 import Kit
 
-public enum AIUsageError: LocalizedError {
+public enum AIUsageErrorCodex: LocalizedError {
     case missingCredentials
     case invalidCredentials
     case invalidResponse
@@ -86,10 +83,11 @@ private struct UsageWindow: Decodable {
 public final class CodexUsageProvider: AIUsageProvider {
     public let id: String = "codex"
     public let displayName: String = "ChatGPT (Codex)"
+    public let requiresAPIKey: Bool = false
 
     public init() {}
 
-    public func fetch() async throws -> AIUsageSnapshot {
+    public func fetch(apiKey: String?) async throws -> ProviderSnapshot {
         let tokens = try self.readTokens()
 
         var request = URLRequest(url: URL(string: "https://chatgpt.com/backend-api/wham/usage")!)
@@ -103,13 +101,13 @@ public final class CodexUsageProvider: AIUsageProvider {
 
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let http = response as? HTTPURLResponse else {
-            throw AIUsageError.invalidResponse
+            throw AIUsageErrorCodex.invalidResponse
         }
         guard (200..<300).contains(http.statusCode) else {
             if http.statusCode == 401 || http.statusCode == 403 {
-                throw AIUsageError.invalidCredentials
+                throw AIUsageErrorCodex.invalidCredentials
             }
-            throw AIUsageError.http(http.statusCode)
+            throw AIUsageErrorCodex.http(http.statusCode)
         }
 
         let payload = try JSONDecoder().decode(UsageResponse.self, from: data)
@@ -122,8 +120,9 @@ public final class CodexUsageProvider: AIUsageProvider {
         let short = windows.first { ($0.limitWindowSeconds ?? 0) < oneDay }
         let weekly = windows.first { ($0.limitWindowSeconds ?? 0) >= oneDay }
 
-        return AIUsageSnapshot(
-            provider: "ChatGPT",
+        return ProviderSnapshot(
+            providerId: self.id,
+            providerName: self.displayName,
             plan: self.formatPlan(payload.planType),
             shortWindow: short?.normalized,
             weeklyWindow: weekly?.normalized,
@@ -141,16 +140,14 @@ public final class CodexUsageProvider: AIUsageProvider {
         paths.append(home.appendingPathComponent(".config/codex/auth.json"))
         paths.append(home.appendingPathComponent(".codex/auth.json"))
 
-        for path in paths where FileManager.default.fileExists(atPath: path.path) {
-            guard let data = try? Data(contentsOf: path),
+        for p in paths where FileManager.default.fileExists(atPath: p.path) {
+            guard let data = try? Data(contentsOf: p),
                   let auth = try? JSONDecoder().decode(CodexAuthFile.self, from: data),
-                  let token = auth.tokens?.accessToken, !token.isEmpty else {
-                continue
-            }
+                  let token = auth.tokens?.accessToken, !token.isEmpty else { continue }
             return (token, auth.tokens?.accountID)
         }
 
-        throw AIUsageError.missingCredentials
+        throw AIUsageErrorCodex.missingCredentials
     }
 
     private func formatPlan(_ plan: String?) -> String? {

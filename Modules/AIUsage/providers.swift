@@ -2,10 +2,6 @@
 //  providers.swift
 //  AIUsage
 //
-//  Provider abstraction for AI quota monitoring.
-//  Add new providers (DeepSeek, Kimi, ...) by implementing AIUsageProvider
-//  and appending them to AIUsageProviders.all.
-//
 
 import Foundation
 import Kit
@@ -26,18 +22,24 @@ public struct AIRateWindow: Codable {
     }
 }
 
-public struct AIUsageSnapshot: Codable {
-    public var provider: String
+public struct ProviderSnapshot: Codable {
+    public var providerId: String
+    public var providerName: String
     public var plan: String?
+    public var balance: String?
     public var shortWindow: AIRateWindow?
     public var weeklyWindow: AIRateWindow?
     public var updatedAt: Date
     public var error: String?
 
-    public init(provider: String, plan: String? = nil, shortWindow: AIRateWindow? = nil,
-                weeklyWindow: AIRateWindow? = nil, updatedAt: Date = Date(), error: String? = nil) {
-        self.provider = provider
+    public init(providerId: String, providerName: String, plan: String? = nil,
+                balance: String? = nil, shortWindow: AIRateWindow? = nil,
+                weeklyWindow: AIRateWindow? = nil, updatedAt: Date = Date(),
+                error: String? = nil) {
+        self.providerId = providerId
+        self.providerName = providerName
         self.plan = plan
+        self.balance = balance
         self.shortWindow = shortWindow
         self.weeklyWindow = weeklyWindow
         self.updatedAt = updatedAt
@@ -45,25 +47,62 @@ public struct AIUsageSnapshot: Codable {
     }
 
     public var remainingFraction: Double {
-        let remaining = self.weeklyWindow?.remainingPercent ?? self.shortWindow?.remainingPercent ?? 0
-        return remaining / 100
+        if let remaining = self.weeklyWindow?.remainingPercent ?? self.shortWindow?.remainingPercent {
+            return remaining / 100
+        }
+        return 0
+    }
+}
+
+public struct AIUsageSnapshot: Codable {
+    public var providers: [ProviderSnapshot]
+    public var updatedAt: Date
+
+    public init(providers: [ProviderSnapshot] = [], updatedAt: Date = Date()) {
+        self.providers = providers
+        self.updatedAt = updatedAt
+    }
+
+    public var primaryProvider: ProviderSnapshot? {
+        self.providers.first(where: { $0.error == nil }) ?? self.providers.first
     }
 }
 
 public protocol AIUsageProvider {
     var id: String { get }
     var displayName: String { get }
-    func fetch() async throws -> AIUsageSnapshot
+    var requiresAPIKey: Bool { get }
+    func fetch(apiKey: String?) async throws -> ProviderSnapshot
 }
 
 public enum AIUsageProviders {
     public static let all: [AIUsageProvider] = [
-        CodexUsageProvider()
+        CodexUsageProvider(),
+        DeepSeekProvider(),
+        KimiProvider()
     ]
 
-    public static var active: AIUsageProvider {
-        let id = Store.shared.string(key: "\(ModuleType.aiUsage.stringValue)_provider", defaultValue: "codex")
-        return self.all.first(where: { $0.id == id }) ?? self.all[0]
+    public static func enabledProviders() -> [AIUsageProvider] {
+        return all.filter {
+            Store.shared.bool(key: "AIUsage_\($0.id)_enabled", defaultValue: $0.id == "codex")
+        }
+    }
+
+    public static func apiKey(for providerId: String) -> String? {
+        let key = Store.shared.string(key: "AIUsage_\(providerId)_apiKey", defaultValue: "")
+        return key.isEmpty ? nil : key
+    }
+
+    public static func setAPIKey(_ key: String, for providerId: String) {
+        Store.shared.set(key: "AIUsage_\(providerId)_apiKey", value: key)
+    }
+
+    public static func isEnabled(_ providerId: String) -> Bool {
+        Store.shared.bool(key: "AIUsage_\(providerId)_enabled", defaultValue: providerId == "codex")
+    }
+
+    public static func setEnabled(_ enabled: Bool, for providerId: String) {
+        Store.shared.set(key: "AIUsage_\(providerId)_enabled", value: enabled)
     }
 }
 

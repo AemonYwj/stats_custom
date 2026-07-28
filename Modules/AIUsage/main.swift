@@ -43,9 +43,10 @@ public class AIUsage: Module {
             self.popupView.callback(snapshot)
         })
 
-        guard snapshot.error == nil else { return }
+        let primary = snapshot.primaryProvider
+        guard let primary, primary.error == nil else { return }
 
-        let remaining = snapshot.remainingFraction
+        let remaining = primary.remainingFraction
         self.menuBar.widgets.filter{ $0.isActive }.forEach { (w: SWidget) in
             switch w.item {
             case let widget as Mini:

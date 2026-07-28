@@ -536,3 +536,18 @@
 "Codex credentials are invalid or expired. Run 'codex login' again." = "Codex 登录信息无效或已过期，请重新运行 'codex login'。";
 "Unable to parse the ChatGPT quota response." = "无法解析 ChatGPT 额度响应。";
 "ChatGPT quota request failed (HTTP %0)." = "ChatGPT 额度请求失败（HTTP %0）。";
+
+// AI Usage – DeepSeek / Kimi
+"Balance" = "余额";
+"Unknown" = "未知";
+"API Key" = "API 密钥";
+"DeepSeek API key not configured. Add it in settings." = "未配置 DeepSeek API 密钥，请在设置中添加。";
+"DeepSeek API key is invalid." = "DeepSeek API 密钥无效。";
+"Unable to parse the DeepSeek balance response." = "无法解析 DeepSeek 余额响应。";
+"DeepSeek request failed (HTTP %0)." = "DeepSeek 请求失败（HTTP %0）。";
+"Kimi credentials not found. Run 'kimi login' first." = "未找到 Kimi 登录信息，请先运行 'kimi login'。";
+"Kimi credentials are invalid or expired." = "Kimi 登录信息无效或已过期。";
+"Unable to parse the Kimi usage response." = "无法解析 Kimi 用量响应。";
+"Kimi request failed (HTTP %0)." = "Kimi 请求失败（HTTP %0）。";
+"Connected" = "已连接";
+"AIUsage reads local CLI credentials and only sends requests to the official provider endpoints." = "读取本地 CLI 凭证，仅向各提供商官方接口发送请求。";
