@@ -514,3 +514,25 @@
 "Pink" = "粉色";
 "Teal" = "蓝绿色";
 "Indigo" = "靛蓝色";
+
+// AI Usage module
+"Provider" = "提供商";
+"Privacy" = "隐私";
+"AIUsage reads the local Codex CLI credentials and only sends requests to the official chatgpt.com quota endpoint." = "读取本机 Codex CLI 登录凭证，仅向 chatgpt.com 官方额度接口发送请求。";
+"Weekly quota" = "每周额度";
+"Session quota" = "短周期额度";
+"Updated at" = "更新于 %0";
+"resets in" = "%0 后重置";
+"d" = "天";
+"h" = "小时";
+"m" = "分";
+"1 min" = "1 分钟";
+"2 min" = "2 分钟";
+"5 min" = "5 分钟";
+"10 min" = "10 分钟";
+"30 min" = "30 分钟";
+"1 hour" = "1 小时";
+"Codex credentials not found. Run 'codex login' first." = "未找到 Codex 登录信息，请先运行 'codex login'。";
+"Codex credentials are invalid or expired. Run 'codex login' again." = "Codex 登录信息无效或已过期，请重新运行 'codex login'。";
+"Unable to parse the ChatGPT quota response." = "无法解析 ChatGPT 额度响应。";
+"ChatGPT quota request failed (HTTP %0)." = "ChatGPT 额度请求失败（HTTP %0）。";

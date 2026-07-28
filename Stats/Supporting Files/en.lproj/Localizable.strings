@@ -28,6 +28,8 @@
 "Open Bluetooth settings" = "Open bluetooth settings";
 "Clock" = "Clock";
 "Open Clock settings" = "Open clock settings";
+"AIUsage" = "AI Usage";
+"Open AIUsage settings" = "Open AI usage settings";
 
 // Words
 "Unknown" = "Unknown";
@@ -514,3 +516,25 @@
 "Pink" = "Pink";
 "Teal" = "Teal";
 "Indigo" = "Indigo";
+
+// AI Usage module
+"Provider" = "Provider";
+"Privacy" = "Privacy";
+"AIUsage reads the local Codex CLI credentials and only sends requests to the official chatgpt.com quota endpoint." = "Reads the local Codex CLI credentials and only sends requests to the official chatgpt.com quota endpoint.";
+"Weekly quota" = "Weekly quota";
+"Session quota" = "Session quota";
+"Updated at" = "Updated at %0";
+"resets in" = "resets in %0";
+"d" = "d";
+"h" = "h";
+"m" = "m";
+"1 min" = "1 min";
+"2 min" = "2 min";
+"5 min" = "5 min";
+"10 min" = "10 min";
+"30 min" = "30 min";
+"1 hour" = "1 hour";
+"Codex credentials not found. Run 'codex login' first." = "Codex credentials not found. Run 'codex login' first.";
+"Codex credentials are invalid or expired. Run 'codex login' again." = "Codex credentials are invalid or expired. Run 'codex login' again.";
+"Unable to parse the ChatGPT quota response." = "Unable to parse the ChatGPT quota response.";
+"ChatGPT quota request failed (HTTP %0)." = "ChatGPT quota request failed (HTTP %0).";
