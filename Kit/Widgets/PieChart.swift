@@ -61,6 +61,10 @@ public class PieChart: WidgetWrapper {
                 self.chart.setSegments([
                     ColorValue(0.86, color: NSColor.systemBlue)
                 ])
+            } else if self.title == "AIUsage" {
+                self.chart.setSegments([
+                    ColorValue(0.42, color: NSColor.systemBlue)
+                ])
             }
         } else {
             self.labelState = Store.shared.bool(key: "\(self.title)_\(self.type.rawValue)_label", defaultValue: self.labelState)

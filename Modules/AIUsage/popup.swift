@@ -14,7 +14,8 @@ internal class Popup: PopupWrapper {
         super.init(module, frame: NSRect(x: 0, y: 0, width: Constants.Popup.width, height: 0))
         self.orientation = .vertical
         self.distribution = .fill
-        self.spacing = 0
+        self.alignment = .centerX
+        self.spacing = Constants.Popup.spacing
     }
 
     required init?(coder: NSCoder) {
@@ -25,156 +26,363 @@ internal class Popup: PopupWrapper {
         self.replay(self.cache, render: self.render)
     }
 
-    private func recalculateHeight() {
-        let h = self.arrangedSubviews.map({ $0.bounds.height + self.spacing }).reduce(0, +) - self.spacing
-        if self.frame.size.height != h {
-            self.setFrameSize(NSSize(width: self.frame.width, height: h))
-            self.sizeCallback?(self.frame.size)
-        }
-    }
-
     internal func callback(_ snapshot: AIUsageSnapshot) {
         self.cache.apply(snapshot, visible: self.window?.isVisible ?? false, render: self.render)
     }
 
     private func render(_ snapshot: AIUsageSnapshot) {
-        let existingIDs = Set(self.providerViews.keys)
         let newIDs = Set(snapshot.providers.map { $0.providerId })
-
-        for id in existingIDs.subtracting(newIDs) {
+        for id in Set(self.providerViews.keys).subtracting(newIDs) {
             self.providerViews.removeValue(forKey: id)?.view.removeFromSuperview()
         }
 
-        for (i, provider) in snapshot.providers.enumerated() {
-            let section: ProviderSection
-            if let existing = self.providerViews[provider.providerId] {
-                section = existing
-                if section.view.superview == nil {
-                    if i > 0, let prev = self.providerViews[snapshot.providers[i-1].providerId] {
-                        self.insertArrangedSubview(section.view, at: self.arrangedSubviews.firstIndex(of: prev.view)! + 1)
-                    } else {
-                        self.insertArrangedSubview(section.view, at: 0)
-                    }
-                }
-                section.update(provider)
-            } else {
-                section = ProviderSection(width: self.frame.width, provider: provider)
-                self.providerViews[provider.providerId] = section
-                self.addArrangedSubview(section.view)
-            }
+        self.arrangedSubviews.forEach {
+            self.removeArrangedSubview($0)
+            $0.removeFromSuperview()
         }
 
+        for provider in snapshot.providers {
+            let section = self.providerViews[provider.providerId]
+                ?? ProviderSection(width: self.frame.width, provider: provider)
+            section.update(provider)
+            self.providerViews[provider.providerId] = section
+            self.addArrangedSubview(section.view)
+        }
+
+        self.layoutSubtreeIfNeeded()
         self.recalculateHeight()
+    }
+
+    private func recalculateHeight() {
+        let contentHeight = self.arrangedSubviews.reduce(CGFloat(0)) { $0 + $1.frame.height }
+        let spacingHeight = CGFloat(max(0, self.arrangedSubviews.count - 1)) * self.spacing
+        let height = contentHeight + spacingHeight
+        guard self.frame.height != height else { return }
+
+        self.setFrameSize(NSSize(width: self.frame.width, height: height))
+        self.sizeCallback?(self.frame.size)
     }
 }
 
-private class ProviderSection {
-    let view: NSView
+private final class ProviderSection {
+    let view: CardBackgroundView
 
-    private let planField: NSTextField = TextView()
-    private let weeklyField: NSTextField = TextView()
-    private let shortField: NSTextField = TextView()
-    private let balanceField: NSTextField = TextView()
-    private let errorField: NSTextField = TextView()
-    private let timestampField: NSTextField = TextView()
-
-    private let sectionHeight: CGFloat = (22 * 4) + (Constants.Popup.margins * 2)
+    private let width: CGFloat
+    private let stack = NSStackView()
+    private var heightConstraint: NSLayoutConstraint!
 
     init(width: CGFloat, provider: ProviderSnapshot) {
-        self.view = NSView(frame: NSRect(x: 0, y: 0, width: width, height: self.sectionHeight))
-        self.view.heightAnchor.constraint(equalToConstant: self.sectionHeight).isActive = true
-        self.view.wantsLayer = true
-        self.view.layer?.cornerRadius = Constants.Popup.radius
+        self.width = width
+        self.view = CardBackgroundView(frame: NSRect(x: 0, y: 0, width: width, height: 0))
 
-        let stack = NSStackView()
-        stack.orientation = .vertical
-        stack.distribution = .fillEqually
-        stack.alignment = .leading
-        stack.spacing = 0
-        stack.translatesAutoresizingMaskIntoConstraints = false
+        self.stack.orientation = .vertical
+        self.stack.distribution = .fill
+        self.stack.alignment = .leading
+        self.stack.spacing = 10
+        self.stack.translatesAutoresizingMaskIntoConstraints = false
 
-        self.planField.font = NSFont.systemFont(ofSize: 13, weight: .semibold)
-        self.weeklyField.font = NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .regular)
-        self.shortField.font = NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .regular)
-        self.balanceField.font = NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .regular)
-        self.errorField.font = NSFont.systemFont(ofSize: 11, weight: .regular)
-        self.errorField.textColor = .systemRed
-        self.timestampField.font = NSFont.systemFont(ofSize: 11, weight: .regular)
-        self.timestampField.textColor = .secondaryLabelColor
-        self.timestampField.alignment = .right
-
-        stack.addArrangedSubview(self.planField)
-        stack.addArrangedSubview(self.weeklyField)
-        stack.addArrangedSubview(self.shortField)
-        stack.addArrangedSubview(self.balanceField)
-
-        let footerStack = NSStackView()
-        footerStack.orientation = .horizontal
-        footerStack.spacing = 0
-        footerStack.addArrangedSubview(self.errorField)
-        footerStack.addArrangedSubview(NSView())
-        footerStack.addArrangedSubview(self.timestampField)
-        stack.addArrangedSubview(footerStack)
-
-        self.view.addSubview(stack)
+        self.view.addSubview(self.stack)
+        self.heightConstraint = self.view.heightAnchor.constraint(equalToConstant: 0)
         NSLayoutConstraint.activate([
-            stack.leadingAnchor.constraint(equalTo: self.view.leadingAnchor, constant: Constants.Popup.margins),
-            stack.trailingAnchor.constraint(equalTo: self.view.trailingAnchor, constant: -Constants.Popup.margins),
-            stack.topAnchor.constraint(equalTo: self.view.topAnchor, constant: Constants.Popup.margins),
-            stack.bottomAnchor.constraint(equalTo: self.view.bottomAnchor, constant: -Constants.Popup.margins)
+            self.view.widthAnchor.constraint(equalToConstant: width),
+            self.heightConstraint,
+            self.stack.leadingAnchor.constraint(
+                equalTo: self.view.leadingAnchor,
+                constant: Constants.Popup.margins
+            ),
+            self.stack.trailingAnchor.constraint(
+                equalTo: self.view.trailingAnchor,
+                constant: -Constants.Popup.margins
+            ),
+            self.stack.topAnchor.constraint(
+                equalTo: self.view.topAnchor,
+                constant: Constants.Popup.margins
+            ),
+            self.stack.bottomAnchor.constraint(
+                equalTo: self.view.bottomAnchor,
+                constant: -Constants.Popup.margins
+            )
         ])
 
         self.update(provider)
     }
 
     func update(_ provider: ProviderSnapshot) {
-        self.planField.stringValue = provider.plan.map { "\(provider.providerName) \($0)" } ?? provider.providerName
-
-        self.weeklyField.stringValue = format(localizedString("Weekly quota"), window: provider.weeklyWindow)
-        self.weeklyField.isHidden = provider.weeklyWindow == nil
-
-        self.shortField.stringValue = format(localizedString("Session quota"), window: provider.shortWindow)
-        self.shortField.isHidden = provider.shortWindow == nil
-
-        if let balance = provider.balance {
-            self.balanceField.stringValue = "\(localizedString("Balance")): \(balance)"
-            self.balanceField.isHidden = false
-        } else {
-            self.balanceField.isHidden = true
+        self.stack.arrangedSubviews.forEach {
+            self.stack.removeArrangedSubview($0)
+            $0.removeFromSuperview()
         }
+
+        self.addHeader(provider)
 
         if let error = provider.error {
-            self.errorField.stringValue = error
-            self.errorField.isHidden = false
+            let field = NSTextField(wrappingLabelWithString: error)
+            field.font = NSFont.systemFont(ofSize: 11)
+            field.textColor = .systemRed
+            field.maximumNumberOfLines = 2
+            self.addRow(field, height: 32)
         } else {
-            self.errorField.isHidden = true
+            if let short = provider.shortWindow {
+                let row = QuotaComparisonView(
+                    frame: NSRect(x: 0, y: 0, width: self.contentWidth, height: 68),
+                    title: localizedString("5-hour quota"),
+                    window: short
+                )
+                self.addRow(row, height: 68)
+            }
+
+            if let weekly = provider.weeklyWindow {
+                let row = QuotaComparisonView(
+                    frame: NSRect(x: 0, y: 0, width: self.contentWidth, height: 68),
+                    title: localizedString("Weekly quota"),
+                    window: weekly
+                )
+                self.addRow(row, height: 68)
+            }
+
+            if let monthly = provider.monthlyWindow {
+                let row = QuotaComparisonView(
+                    frame: NSRect(x: 0, y: 0, width: self.contentWidth, height: 68),
+                    title: localizedString("Monthly quota"),
+                    window: monthly
+                )
+                self.addRow(row, height: 68)
+            }
+
+            if let balance = provider.balance {
+                let field = self.label(
+                    "\(localizedString("Balance"))  \(balance)",
+                    size: 12,
+                    weight: .medium,
+                    color: .labelColor
+                )
+                self.addRow(field, height: 20)
+            }
         }
+
+        let rowHeights = self.stack.arrangedSubviews.reduce(CGFloat(0)) { $0 + $1.frame.height }
+        let spacing = CGFloat(max(0, self.stack.arrangedSubviews.count - 1)) * self.stack.spacing
+        let height = rowHeights + spacing + Constants.Popup.margins * 2
+        self.heightConstraint.constant = height
+        self.view.setFrameSize(NSSize(width: self.width, height: height))
+        self.view.needsDisplay = true
+    }
+
+    private var contentWidth: CGFloat {
+        self.width - Constants.Popup.margins * 2
+    }
+
+    private func addHeader(_ provider: ProviderSnapshot) {
+        let header = NSStackView(frame: NSRect(x: 0, y: 0, width: self.contentWidth, height: 28))
+        header.orientation = .horizontal
+        header.alignment = .centerY
+        header.spacing = 6
+
+        let title = self.label(provider.providerName, size: 13, weight: .semibold, color: .labelColor)
+        header.addArrangedSubview(title)
+
+        if let plan = provider.plan, !plan.isEmpty {
+            let planField = self.label(plan, size: 11, weight: .regular, color: .secondaryLabelColor)
+            header.addArrangedSubview(planField)
+        }
+
+        header.addArrangedSubview(NSView())
 
         let formatter = DateFormatter()
         formatter.dateStyle = .none
-        formatter.timeStyle = .medium
-        self.timestampField.stringValue = formatter.string(from: provider.updatedAt)
+        formatter.timeStyle = .short
+        let timestamp = self.label(
+            formatter.string(from: provider.updatedAt),
+            size: 10,
+            weight: .regular,
+            color: .tertiaryLabelColor
+        )
+        header.addArrangedSubview(timestamp)
+
+        self.addRow(header, height: 28)
     }
 
-    private func format(_ title: String, window: AIRateWindow?) -> String {
-        guard let window else { return "" }
-        let remaining = Int(window.remainingPercent.rounded())
-        guard let reset = window.resetsAt else { return "\(title): \(remaining)%" }
+    private func addRow(_ row: NSView, height: CGFloat) {
+        row.translatesAutoresizingMaskIntoConstraints = false
+        row.setFrameSize(NSSize(width: self.contentWidth, height: height))
+        NSLayoutConstraint.activate([
+            row.widthAnchor.constraint(equalToConstant: self.contentWidth),
+            row.heightAnchor.constraint(equalToConstant: height)
+        ])
+        self.stack.addArrangedSubview(row)
+    }
 
+    private func label(
+        _ text: String,
+        size: CGFloat,
+        weight: NSFont.Weight,
+        color: NSColor
+    ) -> NSTextField {
+        let field = TextView()
+        field.stringValue = text
+        field.font = NSFont.systemFont(ofSize: size, weight: weight)
+        field.textColor = color
+        return field
+    }
+}
+
+private final class CardBackgroundView: NSView {
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        self.wantsLayer = true
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override var wantsUpdateLayer: Bool { true }
+
+    override func updateLayer() {
+        self.layer?.cornerRadius = Constants.Popup.radius
+        self.layer?.borderWidth = 0.5
+        self.layer?.borderColor = NSColor.separatorColor.withAlphaComponent(0.45).cgColor
+        self.layer?.backgroundColor = NSColor.controlBackgroundColor.withAlphaComponent(0.72).cgColor
+    }
+}
+
+private final class QuotaComparisonView: NSView {
+    private let title: String
+    private let rateWindow: AIRateWindow
+
+    override var isFlipped: Bool { true }
+
+    init(frame: NSRect, title: String, window: AIRateWindow) {
+        self.title = title
+        self.rateWindow = window
+        super.init(frame: frame)
+        self.setAccessibilityElement(true)
+        self.setAccessibilityLabel(title)
+        self.setAccessibilityValue("\(Int(window.remainingPercent.rounded()))%")
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override func draw(_ dirtyRect: NSRect) {
+        super.draw(dirtyRect)
+
+        let remaining = self.rateWindow.remainingFraction
+        let timeRemaining = 1 - (self.rateWindow.elapsedFraction() ?? 1)
+        let quotaColor: NSColor = remaining + 0.05 < timeRemaining ? .systemOrange : .controlAccentColor
+        let timeColor = NSColor.systemTeal
+
+        self.drawText(
+            self.title,
+            at: NSPoint(x: 0, y: 0),
+            font: .systemFont(ofSize: 11, weight: .semibold),
+            color: .labelColor
+        )
+
+        let countdown = self.countdown()
+        self.drawRightAlignedText(
+            countdown,
+            y: 1,
+            font: .monospacedDigitSystemFont(ofSize: 10, weight: .regular),
+            color: .secondaryLabelColor
+        )
+
+        self.drawProgressRow(
+            label: localizedString("Quota remaining"),
+            fraction: remaining,
+            y: 25,
+            color: quotaColor
+        )
+        self.drawProgressRow(
+            label: localizedString("Time remaining"),
+            fraction: timeRemaining,
+            y: 48,
+            color: timeColor
+        )
+    }
+
+    private func drawProgressRow(label: String, fraction: Double, y: CGFloat, color: NSColor) {
+        let labelWidth: CGFloat = 72
+        let valueWidth: CGFloat = 32
+        let barX = labelWidth
+        let barWidth = max(0, self.bounds.width - labelWidth - valueWidth - 7)
+
+        self.drawText(
+            label,
+            at: NSPoint(x: 0, y: y - 4),
+            font: .systemFont(ofSize: 10),
+            color: .secondaryLabelColor
+        )
+
+        let track = NSBezierPath(
+            roundedRect: NSRect(x: barX, y: y, width: barWidth, height: 7),
+            xRadius: 3.5,
+            yRadius: 3.5
+        )
+        NSColor.quaternaryLabelColor.withAlphaComponent(0.35).setFill()
+        track.fill()
+
+        if fraction > 0 {
+            let fill = NSBezierPath(
+                roundedRect: NSRect(
+                    x: barX,
+                    y: y,
+                    width: max(7, barWidth * CGFloat(min(1, max(0, fraction)))),
+                    height: 7
+                ),
+                xRadius: 3.5,
+                yRadius: 3.5
+            )
+            color.setFill()
+            fill.fill()
+        }
+
+        self.drawRightAlignedText(
+            "\(Int((fraction * 100).rounded()))%",
+            y: y - 4,
+            font: .monospacedDigitSystemFont(ofSize: 10, weight: .medium),
+            color: color
+        )
+    }
+
+    private func countdown() -> String {
+        guard let reset = self.rateWindow.resetsAt else { return "" }
         let interval = max(0, Int(reset.timeIntervalSinceNow))
         let days = interval / 86_400
         let hours = (interval % 86_400) / 3_600
         let minutes = (interval % 3_600) / 60
 
-        let countdown: String
+        let value: String
         if days > 0 {
-            countdown = "\(days)\(localizedString("d")) \(hours)\(localizedString("h"))"
+            value = "\(days)\(localizedString("d")) \(hours)\(localizedString("h"))"
         } else if hours > 0 {
-            countdown = "\(hours)\(localizedString("h")) \(minutes)\(localizedString("m"))"
+            value = "\(hours)\(localizedString("h")) \(minutes)\(localizedString("m"))"
         } else {
-            countdown = "\(minutes)\(localizedString("m"))"
+            value = "\(minutes)\(localizedString("m"))"
         }
+        return localizedString("resets in", value)
+    }
 
-        return "\(title): \(remaining)% · \(localizedString("resets in", countdown))"
+    private func drawText(_ text: String, at point: NSPoint, font: NSFont, color: NSColor) {
+        guard !text.isEmpty else { return }
+        (text as NSString).draw(
+            at: point,
+            withAttributes: [
+                .font: font,
+                .foregroundColor: color
+            ]
+        )
+    }
+
+    private func drawRightAlignedText(_ text: String, y: CGFloat, font: NSFont, color: NSColor) {
+        guard !text.isEmpty else { return }
+        let width = text.widthOfString(usingFont: font)
+        self.drawText(
+            text,
+            at: NSPoint(x: self.bounds.width - width, y: y),
+            font: font,
+            color: color
+        )
     }
 }

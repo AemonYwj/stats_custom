@@ -43,20 +43,20 @@ public class AIUsage: Module {
             self.popupView.callback(snapshot)
         })
 
-        let primary = snapshot.primaryProvider
-        guard let primary, primary.error == nil else { return }
-
-        let remaining = primary.remainingFraction
+        let value = AIUsageProviders.menuBarValue(from: snapshot)
+        let remaining = value.fraction ?? 0
         self.menuBar.widgets.filter{ $0.isActive }.forEach { (w: SWidget) in
             switch w.item {
             case let widget as Mini:
                 widget.setValue(remaining)
             case let widget as BarChart:
                 widget.setValue([[ColorValue(remaining)]])
+            case let widget as PieChart:
+                widget.setValue([ColorValue(remaining)])
             case let widget as Tachometer:
                 widget.setValue([ColorValue(remaining)])
             case let widget as TextWidget:
-                widget.setValue("\(Int((remaining*100).rounded()))%")
+                widget.setValue(value.text)
             default: break
             }
         }

@@ -67,27 +67,31 @@ The AI Usage module reads your local CLI credentials and displays real-time AI s
 |----------|------------|---------------|
 | ChatGPT / Codex | `~/.codex/auth.json` → `chatgpt.com/backend-api/wham/usage` | Enabled by default; requires `codex login` |
 | DeepSeek | API key → `api.deepseek.com/user/balance` | Enter API key in settings |
-| Kimi Coding Plan | `~/.kimi-code/credentials/kimi-code.json` → `api.kimi.com/coding/v1/user/usage` | Auto-detected; requires `kimi login` |
+| Kimi Coding Plan | `~/.kimi-code/credentials/kimi-code.json` → `api.kimi.com/coding/v1/usages` | Auto-detected; requires `kimi login`; expired OAuth tokens refresh automatically |
+| OpenCode Go | `~/.local/share/opencode/auth.json` + `opencode.db` | Auto-detected; local estimates for the $12/5h, $30/week, and $60/month windows |
 
 ### Design
 
 - Follows the same `Module` / `Popup` / `Settings` / `Reader` / `Widget` architecture as all Stats modules
 - Each provider implements the `AIUsageProvider` protocol — adding a new provider requires only implementing the protocol and registering it
-- Menu bar shows the remaining quota percentage of the primary provider (Mini / BarChart / Tachometer / Text widgets)
-- Popup shows all enabled providers with plan type, quota windows, balance, and reset countdowns
-- Settings allow enabling/disabling individual providers, configuring API keys, and adjusting the refresh interval (1 min – 1 hour)
+- Menu bar shows remaining quota; ChatGPT weekly remaining is the default, and the exact provider/window can be selected in settings
+- Popup compares quota remaining with time remaining using paired progress bars; OpenCode Go adds 5-hour, weekly, and monthly windows
+- Settings allow selecting the menu bar metric, enabling/disabling individual providers, configuring API keys (saved as you type), and adjusting the refresh interval (1 min – 1 hour)
 
 ### Example Popup
 ```
 ChatGPT Pro
-  Weekly quota: 42% · 3d 12h
-  Session quota: 68% · 1h 22m
+  Weekly quota: 58% remaining · 43% time remaining
 
 DeepSeek
   Balance: 110.00 CNY
 
 Kimi Coding Plan
-  Coding Plan · 85%
+  Weekly quota: 65% remaining · 43% time remaining
+  5-hour quota: 32% remaining · 36% time remaining
+
+OpenCode Go · local estimate
+  5-hour quota · Weekly quota · Monthly quota
 ```
 
 ### Privacy
@@ -95,6 +99,8 @@ All credentials are read locally. API tokens are only sent to the respective off
 - `chatgpt.com`
 - `api.deepseek.com`
 - `api.kimi.com`
+
+OpenCode Go estimates are computed locally from OpenCode's SQLite usage history; its API key is never transmitted by Stats.
 
 No browser cookies are accessed, and no data is sent to third-party services.
 

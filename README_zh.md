@@ -46,7 +46,7 @@ Stats 是一款 macOS 系统监控应用，支持以下模块：
 ## AI 用量模块
 > 本仓库新增模块，上游 [exelban/stats](https://github.com/exelban/stats) 不包含此功能。
 
-AI 用量模块读取本地 CLI 登录凭证，将 AI 服务剩余额度实时显示在 Stats 菜单栏和弹窗中。
+AI 用量模块读取本地 CLI 登录凭证，将 AI 服务额度使用量实时显示在 Stats 菜单栏和弹窗中。
 
 ### 支持的提供商
 
@@ -54,27 +54,31 @@ AI 用量模块读取本地 CLI 登录凭证，将 AI 服务剩余额度实时�
 |--------|----------|----------|
 | ChatGPT / Codex | `~/.codex/auth.json` → `chatgpt.com/backend-api/wham/usage` | 默认启用，需先 `codex login` |
 | DeepSeek | API Key → `api.deepseek.com/user/balance` | 在设置中填写 API Key |
-| Kimi Coding Plan | `~/.kimi-code/credentials/kimi-code.json` → `api.kimi.com/coding/v1/user/usage` | 自动检测，需先 `kimi login` |
+| Kimi Coding Plan | `~/.kimi-code/credentials/kimi-code.json` → `api.kimi.com/coding/v1/usages` | 自动检测，需先 `kimi login`；OAuth 过期后自动刷新 |
+| OpenCode Go | `~/.local/share/opencode/auth.json` + `opencode.db` | 自动检测；本地估算 5 小时 $12、每周 $30、每月 $60 三个窗口 |
 
 ### 架构设计
 
 - 沿用 Stats 原生的 `Module` / `Popup` / `Settings` / `Reader` / `Widget` 模块架构
 - 各提供商实现 `AIUsageProvider` 协议，新增提供商只需实现协议并注册
-- 菜单栏显示首选提供商的剩余额度百分比（支持 Mini / BarChart / Tachometer / Text 控件）
-- 弹窗展示所有已启用提供商的详细信息：套餐类型、额度窗口、余额、重置倒计时
-- 设置中可独立开关各提供商、配置 API Key、调整刷新频率（1 分钟 — 1 小时）
+- 菜单栏显示剩余额度；默认是 ChatGPT 周额度，并可在设置中精确选择提供商和额度窗口
+- 弹窗用成对进度条比较“额度剩余”和“时间剩余”；OpenCode Go 增加 5 小时、周、月三个窗口
+- 设置中可选择顶部栏指标、独立开关各提供商、配置 API Key（输入时即时保存）、调整刷新频率（1 分钟 — 1 小时）
 
 ### 弹窗示例
 ```
 ChatGPT Pro
-  每周额度: 42% · 3天12小时
-  短周期额度: 68% · 1小时22分
+  每周额度: 剩余 58% · 时间剩余 43%
 
 DeepSeek
   余额: 110.00 CNY
 
 Kimi Coding Plan
-  Coding Plan · 85%
+  每周额度: 剩余 65% · 时间剩余 43%
+  5 小时额度: 剩余 32% · 时间剩余 36%
+
+OpenCode Go · 本地估算
+  5 小时额度 · 每周额度 · 每月额度
 ```
 
 ### 隐私说明
@@ -82,6 +86,8 @@ Kimi Coding Plan
 - `chatgpt.com`
 - `api.deepseek.com`
 - `api.kimi.com`
+
+OpenCode Go 的额度由 Stats 从 OpenCode 本机 SQLite 用量历史估算，其 API Key 不会由 Stats 发送到网络。
 
 不读取浏览器 Cookie，不向第三方发送任何数据。
 

@@ -28,7 +28,7 @@
 "Open Bluetooth settings" = "Open bluetooth settings";
 "Clock" = "Clock";
 "Open Clock settings" = "Open clock settings";
-"AIUsage" = "AI Usage";
+"AIUsage" = "AI";
 "Open AIUsage settings" = "Open AI usage settings";
 
 // Words
@@ -523,6 +523,12 @@
 "AIUsage reads the local Codex CLI credentials and only sends requests to the official chatgpt.com quota endpoint." = "Reads the local Codex CLI credentials and only sends requests to the official chatgpt.com quota endpoint.";
 "Weekly quota" = "Weekly quota";
 "Session quota" = "Session quota";
+"5-hour quota" = "5-hour quota";
+"Monthly quota" = "Monthly quota";
+"Quota used" = "Quota used";
+"Time elapsed" = "Time elapsed";
+"Quota remaining" = "Quota remaining";
+"Time remaining" = "Time remaining";
 "Updated at" = "Updated at %0";
 "resets in" = "resets in %0";
 "d" = "d";
@@ -551,5 +557,20 @@
 "Kimi credentials are invalid or expired." = "Kimi credentials are invalid or expired.";
 "Unable to parse the Kimi usage response." = "Unable to parse the Kimi usage response.";
 "Kimi request failed (HTTP %0)." = "Kimi request failed (HTTP %0).";
+"Kimi credential refresh failed (HTTP %0)." = "Kimi credential refresh failed (HTTP %0).";
+"Unable to update the refreshed Kimi credentials." = "Unable to update the refreshed Kimi credentials.";
+"Menu bar display" = "Menu bar display";
+"ChatGPT weekly remaining" = "ChatGPT weekly remaining";
+"DeepSeek balance" = "DeepSeek balance";
+"Kimi 5-hour remaining" = "Kimi 5-hour remaining";
+"Kimi weekly remaining" = "Kimi weekly remaining";
+"OpenCode Go 5-hour remaining" = "OpenCode Go 5-hour remaining";
+"OpenCode Go weekly remaining" = "OpenCode Go weekly remaining";
+"OpenCode Go monthly remaining" = "OpenCode Go monthly remaining";
+"Go · local estimate" = "Go · local estimate";
+"OpenCode Go is not connected. Connect it in OpenCode first." = "OpenCode Go is not connected. Connect it in OpenCode first.";
+"OpenCode usage database was not found." = "OpenCode usage database was not found.";
+"Unable to read OpenCode Go local usage." = "Unable to read OpenCode Go local usage.";
+"Unable to read OpenCode Go local usage: %0" = "Unable to read OpenCode Go local usage: %0";
 "Connected" = "Connected";
 "AIUsage reads local CLI credentials and only sends requests to the official provider endpoints." = "Reads local CLI credentials and only sends requests to the official provider endpoints.";
