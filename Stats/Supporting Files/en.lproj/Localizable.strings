@@ -560,6 +560,7 @@
 "Kimi credential refresh failed (HTTP %0)." = "Kimi credential refresh failed (HTTP %0).";
 "Unable to update the refreshed Kimi credentials." = "Unable to update the refreshed Kimi credentials.";
 "Menu bar display" = "Menu bar display";
+"ChatGPT 5-hour remaining" = "ChatGPT 5-hour remaining";
 "ChatGPT weekly remaining" = "ChatGPT weekly remaining";
 "DeepSeek balance" = "DeepSeek balance";
 "Kimi 5-hour remaining" = "Kimi 5-hour remaining";

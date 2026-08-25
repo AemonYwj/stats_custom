@@ -558,6 +558,7 @@
 "Kimi credential refresh failed (HTTP %0)." = "Kimi 凭证刷新失败（HTTP %0）。";
 "Unable to update the refreshed Kimi credentials." = "无法保存刷新后的 Kimi 凭证。";
 "Menu bar display" = "顶部栏显示";
+"ChatGPT 5-hour remaining" = "ChatGPT 5 小时额度剩余";
 "ChatGPT weekly remaining" = "ChatGPT 周额度剩余";
 "DeepSeek balance" = "DeepSeek 余额";
 "Kimi 5-hour remaining" = "Kimi 5 小时额度剩余";

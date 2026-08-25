@@ -74,13 +74,14 @@ The AI Usage module reads your local CLI credentials and displays real-time AI s
 
 - Follows the same `Module` / `Popup` / `Settings` / `Reader` / `Widget` architecture as all Stats modules
 - Each provider implements the `AIUsageProvider` protocol — adding a new provider requires only implementing the protocol and registering it
-- Menu bar shows remaining quota; ChatGPT weekly remaining is the default, and the exact provider/window can be selected in settings
-- Popup compares quota remaining with time remaining using paired progress bars; OpenCode Go adds 5-hour, weekly, and monthly windows
+- Menu bar shows remaining quota; ChatGPT weekly remaining is the default, and the exact provider/window (including ChatGPT's 5-hour window) can be selected in settings
+- Popup compares quota remaining with time remaining using paired progress bars; ChatGPT and Kimi show 5-hour/weekly windows, while OpenCode Go adds 5-hour, weekly, and monthly windows
 - Settings allow selecting the menu bar metric, enabling/disabling individual providers, configuring API keys (saved as you type), and adjusting the refresh interval (1 min – 1 hour)
 
 ### Example Popup
 ```
 ChatGPT Pro
+  5-hour quota: 82% remaining · 64% time remaining
   Weekly quota: 58% remaining · 43% time remaining
 
 DeepSeek

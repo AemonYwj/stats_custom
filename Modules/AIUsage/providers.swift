@@ -169,6 +169,7 @@ public struct AIUsageMenuBarValue {
 }
 
 public enum AIUsageMenuBarMetric: String, CaseIterable {
+    case codexShort = "codex.short"
     case codexWeekly = "codex.weekly"
     case deepSeekBalance = "deepseek.balance"
     case kimiShort = "kimi.short"
@@ -179,7 +180,7 @@ public enum AIUsageMenuBarMetric: String, CaseIterable {
 
     public var providerID: String {
         switch self {
-        case .codexWeekly: return "codex"
+        case .codexShort, .codexWeekly: return "codex"
         case .deepSeekBalance: return "deepseek"
         case .kimiShort, .kimiWeekly: return "kimi"
         case .openCodeGoShort, .openCodeGoWeekly, .openCodeGoMonthly: return "opencode-go"
@@ -188,6 +189,8 @@ public enum AIUsageMenuBarMetric: String, CaseIterable {
 
     public var displayName: String {
         switch self {
+        case .codexShort:
+            return localizedString("ChatGPT 5-hour remaining")
         case .codexWeekly:
             return localizedString("ChatGPT weekly remaining")
         case .deepSeekBalance:
@@ -209,7 +212,7 @@ public enum AIUsageMenuBarMetric: String, CaseIterable {
         switch self {
         case .codexWeekly, .kimiWeekly, .openCodeGoWeekly:
             return provider.weeklyWindow
-        case .kimiShort, .openCodeGoShort:
+        case .codexShort, .kimiShort, .openCodeGoShort:
             return provider.shortWindow
         case .openCodeGoMonthly:
             return provider.monthlyWindow

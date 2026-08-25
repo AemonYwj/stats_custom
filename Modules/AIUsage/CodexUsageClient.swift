@@ -117,12 +117,14 @@ public final class CodexUsageProvider: AIUsageProvider {
         ].compactMap { $0 }
 
         let oneDay = 86_400
+        let short = windows.first { ($0.limitWindowSeconds ?? 0) < oneDay }
         let weekly = windows.first { ($0.limitWindowSeconds ?? 0) >= oneDay }
 
         return ProviderSnapshot(
             providerId: self.id,
             providerName: self.displayName,
             plan: self.formatPlan(payload.planType),
+            shortWindow: short?.normalized,
             weeklyWindow: weekly?.normalized,
             updatedAt: Date()
         )
